@@ -24,7 +24,9 @@ let myschema = buildSchema(`
 let root = {
     guitars: async () => {
         let [rows, fields] = await connection.query("SELECT * FROM warehouse");
-        return rows;
+        let content = JSON.stringify(rows);
+        let guitars = JSON.parse(content);
+        return guitars;
     }
 };
 
@@ -37,6 +39,7 @@ app.use('/api', express_graphql({
     graphiql: true,
 }));
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public/images')));
 
 app.listen(3000,() => {
     console.log('Listening on port 3000');
