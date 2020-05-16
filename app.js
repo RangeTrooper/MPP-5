@@ -10,6 +10,9 @@ let connection;
 const mysql = require('mysql2/promise');
 
 let myschema = buildSchema(`
+    type Mutation {
+        deleteGuitar (guitar_id: Int!): Int
+    },
     type Query {
         guitars: [Guitar]
     },
@@ -27,7 +30,20 @@ let root = {
         let content = JSON.stringify(rows);
         let guitars = JSON.parse(content);
         return guitars;
-    }
+    },
+    deleteGuitar:  async (data) => {
+        let obj = data.guitar_id + "";
+        let temp = parseInt(obj);
+        let query = "DELETE FROM warehouse WHERE guitar_id = " + temp;
+        let result = await connection.query(query);
+        if (result[0].affectedRows !== 0){
+            console.log('deleted');
+            return temp;
+        } else {
+            return 0;
+        }
+
+    },
 };
 
 main();
