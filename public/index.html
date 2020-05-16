@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="javascripts/jquery.js"></script>
+</head>
+<body>
+index
+<script>
+    $.ajax({
+        url: "/api",
+        contentType:"application/json",
+        type: "POST",
+        data: JSON.stringify({
+            query:"{guitars}",
+        }),
+        success: function (data) {
+            //$('body').append(data.data.guitars);
+            console.log(data.data.guitars);
+        }
+    })
+</script>
+</body>
+</html>
