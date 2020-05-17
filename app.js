@@ -20,6 +20,7 @@ let myschema = buildSchema(`
     type Query {
         guitars: [Guitar]
         login (login: String!, password: String!): Boolean
+        logout: Boolean
     },
     type Guitar {
         guitar_id: Int,
@@ -41,13 +42,19 @@ let root = {
         return guitars;
     },
     deleteGuitar:  async (data) => {
-        let obj = data.guitar_id + "";
-        let temp = parseInt(obj);
-        let query = "DELETE FROM warehouse WHERE guitar_id = " + temp;
-        let result = await connection.query(query);
-        if (result[0].affectedRows !== 0){
-            console.log('deleted');
-            return temp;
+        let array = request.headers.cookie.split(';');
+        let token = array[array.length -1].split('=')[1];
+        if (verifyToken(token)) {
+            let obj = data.guitar_id + "";
+            let temp = parseInt(obj);
+            let query = "DELETE FROM warehouse WHERE guitar_id = " + temp;
+            let result = await connection.query(query);
+            if (result[0].affectedRows !== 0) {
+                console.log('deleted');
+                return temp;
+            } else {
+                return 0;
+            }
         } else {
             return 0;
         }
@@ -83,6 +90,11 @@ let root = {
         }else{
             return false;
         }
+    },
+    logout: () => {
+        let token = request.headers.cookie.split(';')[3].split('=')[1];
+        response.setHeader('Set-Cookie', 'token= ; expires=Thu, 01 Jan 1970 00:00:00 UTC; Secure, HttpOnly');
+        return true;
     }
 };
 
@@ -114,9 +126,6 @@ app.use('/api', express_graphql(() =>({
     rootValue: root,
     graphiql: true,
 })));
-
-///дописать обработчик для загрузки файла
-
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname, 'public/images')));

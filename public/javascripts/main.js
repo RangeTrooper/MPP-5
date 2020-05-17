@@ -73,6 +73,7 @@ let row = function (guitar) {
         "<a class='removeLink btn btn-danger' data-id='" + guitar.guitar_id + "'>Удалить</a></td></tr>";
 };
 
+
 $("#reset").click(function (e) {
 
     e.preventDefault();
@@ -93,7 +94,12 @@ function deleteGuitar(guitar_id){
             query:`mutation {deleteGuitar (guitar_id: ${guitar_id})}`,
         }),
         success: function (result) {
-            $("tr[data-rowid='" + result.data.deleteGuitar + "']").remove();
+            if (result.data.deleteGuitar !== 0)
+                $("tr[data-rowid='" + result.data.deleteGuitar + "']").remove();
+            else{
+                alert("Ошибка 401. Отказано в доступе. Авторизуйтесь, чтобы продолжить");
+                showAuthButtons();
+            }
         }
     })
 }
@@ -120,7 +126,7 @@ $("#login_form").submit(function (e) {
 function logIn(login, password) {
     let str = `{login (login: "${login}", password: "${password}")}`;
     $.ajax({
-        url: "/api/login",
+        url: "/api",
         contentType: "application/json",
         method: "POST",
         data: JSON.stringify({
@@ -137,6 +143,29 @@ function logIn(login, password) {
 
         }
     })
+}
+
+$("#li_logout").click(function () {
+    logOut();
+});
+
+function logOut() {
+
+    $.ajax({
+        url: "/api",
+        contentType: "application/json",
+        method: "POST",
+        xhrFields: {
+            withCredentials: true
+        },
+        data: JSON.stringify({
+            query: `{logout}`,
+        }),
+        success: function (result) {
+            let res = result.data.logout;
+            showAuthButtons();
+        }
+    });
 }
 
 function addGuitar(model, amountInStock, id, imageSrc){
