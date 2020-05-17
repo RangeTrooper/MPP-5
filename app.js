@@ -143,12 +143,7 @@ app.listen(port,() => {
 });
 
 async function main(){
-     connection = await mysql.createConnection({
-        host: process.env.HOST,
-        user: process.env.USER,
-        database: process.env.DATABASE,
-        password: process.env.PASSWORD
-    });
+     connection = await mysql.createConnection('mysql://b3ab51e802e233:484adb74@eu-cdbr-west-03.cleardb.net/heroku_ce2034348092737?reconnect=true');
 }
 
 function verifyToken(token) {
