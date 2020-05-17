@@ -1,4 +1,22 @@
 let imageFilename = "";
+let data =[];
+
+window.onload =function () {
+    $.ajax({
+        url: "/api",
+        contentType:"application/json",
+        type: "POST",
+        data: JSON.stringify({
+            query:`query {verify}`,
+        }),
+        success: function (result) {
+            if (result.data.verify)
+                hideAuthButtons();
+            else
+                showAuthButtons();
+        }
+    })
+};
 
 function getGuitars(){
     $.ajax({
@@ -13,9 +31,12 @@ function getGuitars(){
             $.each(result.data.guitars, function (index, guitar) {
                 rows += row(guitar);
             });
+            data = result.data.guitars;
             $("table tbody").append(rows);
-            $('#guitarTable').DataTable();
+            $('#guitarTable').DataTable({"paging": false});
             $('.dataTables_length').addClass('bs-select');
+            $('#guitarTable_length').hide();
+            $('#guitarTable_info').hide();
             render(window.location.hash);
         }
     })
@@ -98,6 +119,7 @@ function deleteGuitar(guitar_id){
                 $("tr[data-rowid='" + result.data.deleteGuitar + "']").remove();
             else{
                 alert("Ошибка 401. Отказано в доступе. Авторизуйтесь, чтобы продолжить");
+                $('#guitarTable_info').hide();
                 showAuthButtons();
             }
         }
@@ -170,7 +192,7 @@ function logOut() {
 
 function addGuitar(model, amountInStock, id, imageSrc){
     if (imageSrc.length ===0)
-        imageSrc = "none";
+        imageSrc = 'none';
     let str = `mutation {addGuitar (guitar_id: ${id}, guitar_name:"${model}", amount_in_stock: ${amountInStock},`+
                     `img_src:"${imageSrc}") {guitar_id, guitar_name, amount_in_stock, img_src}}`;
     console.log(str);
@@ -180,7 +202,7 @@ function addGuitar(model, amountInStock, id, imageSrc){
         type: "POST",
         data: JSON.stringify({
             query:`mutation {addGuitar (guitar_id: ${id}, guitar_name:"${model}", amount_in_stock: ${amountInStock},`+
-                `img_src:" ${imageSrc}") {guitar_id, guitar_name, amount_in_stock, img_src}}`,
+                `img_src:"${imageSrc}") {guitar_id, guitar_name, amount_in_stock, img_src}}`,
         }),
         success: function (result) {
             $("#adding_form").find("input").val('');
@@ -200,7 +222,7 @@ $("#adding_form").submit(function (e) {
     let model = this.elements["model"].value;
     let amountInStock = this.elements["amount"].value;
     let id = this.elements["guitar_id"].value;
-    let imageSrc = this.elements["image"].value;;
+    let imageSrc = this.elements["image"].value;
     addGuitar(model, amountInStock,id,imageSrc)
 });
 
@@ -217,9 +239,18 @@ async function uploadFile(input) {
             filename = filename.substring(1);
         }
         imageFilename = filename;
-        let formData = new FormData();
+        let file = input.files[0];
+         let formData = new FormData();
         formData.append("file", input.files[0]);
-        await fetch('/api/uploadFile',{method: "POST", body: formData});
+        //await fetch('/api/uploadFile',{method: "POST", body: file});
+        $.ajax({
+            url: "/api/uploadFile",
+            type: "POST",
+            data: formData,
+            success: function (result) {
+                window.location.hash = "#main";
+            }
+        })
     }
 
 }

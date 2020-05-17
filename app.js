@@ -21,6 +21,7 @@ let myschema = buildSchema(`
         guitars: [Guitar]
         login (login: String!, password: String!): Boolean
         logout: Boolean
+        verify: Boolean
     },
     type Guitar {
         guitar_id: Int,
@@ -95,6 +96,14 @@ let root = {
         let token = request.headers.cookie.split(';')[3].split('=')[1];
         response.setHeader('Set-Cookie', 'token= ; expires=Thu, 01 Jan 1970 00:00:00 UTC; Secure, HttpOnly');
         return true;
+    },
+    verify: () => {
+        let array = request.headers.cookie.split(';');
+        let token = array[array.length -1].split('=')[1];
+        if (verifyToken(token))
+            return true;
+        else
+            return false;
     }
 };
 
@@ -103,15 +112,10 @@ main();
 let app = express();
 
 app.post('/api/uploadFile', function(req, res) {
-    let fstream;
-    req.pipe(req.busboy);
-    req.busboy.on('file', function (fieldname, file, filename) {
-        console.log("Uploading: " + filename);
-        fstream = fs.createWriteStream(__dirname +  '\\public\\images\\'+ filename);
-        file.pipe(fstream);
-        fstream.on('close', function () {
-            res.redirect('back');
-        });
+    fs.writeFile(__dirname +  '\\public\\images\\'+ "temp.jpg", req.body.file, function (error) {
+        if (!error) {
+            console.log('adding image succesful')
+        }
     });
 });
 
@@ -120,6 +124,8 @@ app.use('/api', function (req,res,next) {
     request = req;
     next();
 });
+
+app.use(busboy());
 
 app.use('/api', express_graphql(() =>({
     schema: myschema,
