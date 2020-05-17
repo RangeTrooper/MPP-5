@@ -85,7 +85,7 @@ function render(hashKey) {
 let row = function (guitar) {
     let img_src;
     if (guitar.img_src === 'NULL' || guitar.img_src == null|| guitar.img_src === "none")
-        img_src = "no_image_found.png";
+        img_src = "https://psv4.userapi.com/c856236/u336446797/docs/d1/ed03433a97f6/no_image_found.png";
     else
         img_src = guitar.img_src;
     return "<tr data-rowid='" + guitar.guitar_id + "'><td><img style='max-width: 170px' class='img-thumbnail' src='" + img_src + "' ></td><td>" + guitar.guitar_id + "</td>" +

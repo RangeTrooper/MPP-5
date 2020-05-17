@@ -144,9 +144,9 @@ app.listen(port,() => {
 
 async function main(){
      connection = await mysql.createConnection({
-        host: "localhost",
-        user: "root",
-        database: "guitarshop",
+        host: process.env.HOST,
+        user: process.env.USER,
+        database: process.env.DATABASE,
         password: process.env.PASSWORD
     });
 }
