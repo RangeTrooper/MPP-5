@@ -12,6 +12,7 @@ const mysql = require('mysql2/promise');
 let myschema = buildSchema(`
     type Mutation {
         deleteGuitar (guitar_id: Int!): Int
+        addGuitar(guitar_id: Int!, guitar_name: String!, amount_in_stock: Int!, img_src: String): Guitar
     },
     type Query {
         guitars: [Guitar]
@@ -44,6 +45,14 @@ let root = {
         }
 
     },
+    addGuitar: async (data) => {
+        console.log(data);
+        let obj = [data.guitar_id, data.guitar_name, data.amount_in_stock, data.img_src];
+        let sql = "INSERT INTO warehouse VALUES (?,?,?,?)";
+        let result = await connection.query(sql, obj);
+        let returnValue = {guitar_name: data.guitar_name, guitar_id: data.guitar_id, amount_in_stock: data.amount_in_stock, img_src: data.img_src};
+        return returnValue;
+    }
 };
 
 main();
@@ -54,6 +63,9 @@ app.use('/api', express_graphql({
     rootValue: root,
     graphiql: true,
 }));
+
+///дописать обработчик для загрузки файла
+
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname, 'public/images')));
 

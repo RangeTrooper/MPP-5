@@ -61,7 +61,7 @@ function render(hashKey) {
 
 let row = function (guitar) {
     let img_src;
-    if (guitar.img_src === 'NULL' || guitar.img_src == null)
+    if (guitar.img_src === 'NULL' || guitar.img_src == null|| guitar.img_src === "none")
         img_src = "no_image_found.png";
     else
         img_src = guitar.img_src;
@@ -96,11 +96,48 @@ function deleteGuitar(guitar_id){
     })
 }
 
+function addGuitar(model, amountInStock, id, imageSrc){
+    if (imageSrc.length ===0)
+        imageSrc = "none";
+    let str = `mutation {addGuitar (guitar_id: ${id}, guitar_name:"${model}", amount_in_stock: ${amountInStock},`+
+                    `img_src:"${imageSrc}") {guitar_id, guitar_name, amount_in_stock, img_src}}`;
+    console.log(str);
+    $.ajax({
+        url: "/api",
+        contentType:"application/json",
+        type: "POST",
+        data: JSON.stringify({
+            query:`mutation {addGuitar (guitar_id: ${id}, guitar_name:"${model}", amount_in_stock: ${amountInStock},`+
+                `img_src:" ${imageSrc}") {guitar_id, guitar_name, amount_in_stock, img_src}}`,
+        }),
+        success: function (result) {
+            $("#adding_form").find("input").val('');
+            $("table tbody").append(row(result.data.addGuitar));
+            window.location.hash = "#main";
+        }
+    })
+}
+
 $("body").on("click", ".removeLink", function () {
     var id = $(this).data("id");
     deleteGuitar(id);
 });
 
+$("#adding_form").submit(function (e) {
+    e.preventDefault();
+    let model = this.elements["model"].value;
+    let amountInStock = this.elements["amount"].value;
+    let id = this.elements["guitar_id"].value;
+    let imageSrc = this.elements["image"].value;;
+    addGuitar(model, amountInStock,id,imageSrc)
+});
+
 window.onhashchange = function () {
     render(window.location.hash);
 };
+
+async function uploadFile(input) {
+    let formData = new FormData();
+    formData.append("file", input.files[0]);
+    await fetch('/api/upload',{method: "POST", body: formData});
+}
