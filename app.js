@@ -6,8 +6,11 @@ let busboy = require ("connect-busboy");
 let express_graphql = require('express-graphql');
 let { graphql, buildSchema} = require('graphql');
 let connection;
-
+require('dotenv').config();
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const mysql = require('mysql2/promise');
+let response, request;
 
 let myschema = buildSchema(`
     type Mutation {
@@ -16,12 +19,17 @@ let myschema = buildSchema(`
     },
     type Query {
         guitars: [Guitar]
+        login (login: String!, password: String!): Boolean
     },
     type Guitar {
         guitar_id: Int,
         guitar_name: String,
         amount_in_stock: Int,
         img_src: String
+    },
+    type User {
+        login: String,
+        password: String
     }
 `);
 
@@ -52,19 +60,63 @@ let root = {
         let result = await connection.query(sql, obj);
         let returnValue = {guitar_name: data.guitar_name, guitar_id: data.guitar_id, amount_in_stock: data.amount_in_stock, img_src: data.img_src};
         return returnValue;
+    },
+    login: async (_, req,{res}) => {
+        const login = _.login;
+        const password = _.password;
+        let user=new User(login,password,null);
+        let passwordDB ;
+        let sql="SELECT password FROM user WHERE login = ?";
+        let result = await connection.query(sql, user.username);
+        let results = JSON.stringify(result);
+        if (result.length>0) {
+            let temp = JSON.parse(results);
+            passwordDB = temp[0][0].password;
+            if (bcrypt.compareSync(password, passwordDB)) {
+                const expiresIn = 60 * 60;
+                const accessToken = jwt.sign({login: login}, process.env.SECRET_KEY, {expiresIn: expiresIn});
+                response.setHeader('Set-Cookie', 'token=' + accessToken + '; expires = '+ setExpiringTime()+';Secure, HttpOnly');
+                return true;
+            } else {
+                return false;
+            }
+        }else{
+            return false;
+        }
     }
 };
 
 main();
 
 let app = express();
-app.use('/api', express_graphql({
+
+app.post('/api/uploadFile', function(req, res) {
+    let fstream;
+    req.pipe(req.busboy);
+    req.busboy.on('file', function (fieldname, file, filename) {
+        console.log("Uploading: " + filename);
+        fstream = fs.createWriteStream(__dirname +  '\\public\\images\\'+ filename);
+        file.pipe(fstream);
+        fstream.on('close', function () {
+            res.redirect('back');
+        });
+    });
+});
+
+app.use('/api', function (req,res,next) {
+    response = res;
+    request = req;
+    next();
+});
+
+app.use('/api', express_graphql(() =>({
     schema: myschema,
     rootValue: root,
     graphiql: true,
-}));
+})));
 
 ///дописать обработчик для загрузки файла
+
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname, 'public/images')));
@@ -78,10 +130,33 @@ async function main(){
         host: "localhost",
         user: "root",
         database: "guitarshop",
-        password: "njhcbjy19"
+        password: process.env.PASSWORD
     });
 }
 
+function verifyToken(token) {
+    try{
+        jwt.verify(token, process.env.SECRET_KEY);
+        return true;
+    }catch(error){
+        return false;
+    }
+}
+
+
+function User(username,password,email) {
+    this.username=username;
+    this.password= password;
+    this.email=email;
+}
+
+function setExpiringTime() {
+    let currentTime = new Date();
+    let time = currentTime.getTime();
+    let expireTime = time + 1000*3600;
+    currentTime.setTime(expireTime);
+    return currentTime.toUTCString();
+}
 
 process.on("SIGINT",()=>{
     connection.end();

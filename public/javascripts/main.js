@@ -1,3 +1,5 @@
+let imageFilename = "";
+
 function getGuitars(){
     $.ajax({
         url: "/api",
@@ -96,6 +98,47 @@ function deleteGuitar(guitar_id){
     })
 }
 
+function hideAuthButtons(){
+    $("#li_login").hide();
+    $("#li_register").hide();
+    $("#li_logout").show();
+}
+
+function showAuthButtons() {
+    $("#li_login").show();
+    $("#li_register").show();
+    $("#li_logout").hide();
+}
+
+$("#login_form").submit(function (e) {
+    e.preventDefault();
+    let login = this.elements["login_input"].value;
+    let password = this.elements["password_input"].value;
+    logIn(login,password);
+})
+
+function logIn(login, password) {
+    let str = `{login (login: "${login}", password: "${password}")}`;
+    $.ajax({
+        url: "/api/login",
+        contentType: "application/json",
+        method: "POST",
+        data: JSON.stringify({
+            query: `{login (login: "${login}", password: "${password}")}`,
+        }),
+        success: function (result) {
+            if (result.data.login) {
+                hideAuthButtons(login);
+                window.location.hash = "#main";
+            }else{
+                alert("Ошибка входа. Проверьте введённые данные");
+                reset();
+            }
+
+        }
+    })
+}
+
 function addGuitar(model, amountInStock, id, imageSrc){
     if (imageSrc.length ===0)
         imageSrc = "none";
@@ -137,7 +180,17 @@ window.onhashchange = function () {
 };
 
 async function uploadFile(input) {
-    let formData = new FormData();
-    formData.append("file", input.files[0]);
-    await fetch('/api/upload',{method: "POST", body: formData});
+    let fullPath = document.getElementById('file_input').value;
+    if (fullPath){
+        let startIndex = (fullPath.indexOf('\\') >= 0 ? fullPath.lastIndexOf('\\') : fullPath.lastIndexOf('/'));
+        let filename = fullPath.substring(startIndex);
+        if (filename.indexOf('\\') === 0 || filename.indexOf('/') === 0) {
+            filename = filename.substring(1);
+        }
+        imageFilename = filename;
+        let formData = new FormData();
+        formData.append("file", input.files[0]);
+        await fetch('/api/uploadFile',{method: "POST", body: formData});
+    }
+
 }
